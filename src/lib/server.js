@@ -3,9 +3,10 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import logger from './logger';
-import brandRoutes from '../route/brand-route';
 import loggerMiddleware from './loggerMiddleware';
 import errorMiddleware from './errorMiddleware';
+import brandRoutes from '../route/brand-route';
+import motorcycleRoutes from '../route/motorcycle-route';
 
 const app = express();
 let server = null;
@@ -13,6 +14,7 @@ let server = null;
 // Middleware ordering 
 app.use(loggerMiddleware);
 app.use(brandRoutes);
+app.use(motorcycleRoutes);
 app.all('*', (request, response) => {
   logger.log(logger.INFO, 'Returning a 404 from the catch-all/default route');
   return response.sendStatus(404);
