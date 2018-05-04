@@ -10,8 +10,9 @@ const jsonParser = bodyParser.json();
 
 const brandRouter = new Router();
 
-brandRouter.post('api/brand', jsonParser, (request, response, next) => {
-  if (!request.body.brandName || !request.body.originCountry) {
+brandRouter.post('/api/brand', jsonParser, (request, response, next) => {
+  // if (!request.body.brandName || !request.body.originCountry || !request.body.section) 
+  if ( !request.body.brandName) {
     return next(new HttpErrors(400, 'Responding with a 400 error code'));
   }
   return new Brand(request.body).save()
@@ -22,7 +23,7 @@ brandRouter.post('api/brand', jsonParser, (request, response, next) => {
     .catch(next);
 });
 
-brandRouter.get('api/brand/:id?', (request, response, next) => {
+brandRouter.get('/api/brand/:id?', (request, response, next) => {
   return Brand.findById(request.params.id)
     .then((brand) => {
       if (!brand) {
@@ -34,7 +35,7 @@ brandRouter.get('api/brand/:id?', (request, response, next) => {
     .catch(next);
 });
 
-brandRouter.get('api/brand', (request, response, next) => {
+brandRouter.get('/api/brand/', (request, response, next) => {
   return Brand.find() 
     .then((brands) => {
       if (!brands) {
@@ -46,7 +47,7 @@ brandRouter.get('api/brand', (request, response, next) => {
     .catch(next);
 });
 
-brandRouter.delete('/api/brand:id?', (request, response, next) => {
+brandRouter.delete('/api/brand/:id?', (request, response, next) => {
   return Brand.findByIdAndRemove(request.params.id)
     .then((brandToDelete) => {
       if (!brandToDelete) {

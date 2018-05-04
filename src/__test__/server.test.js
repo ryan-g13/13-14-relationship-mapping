@@ -7,13 +7,13 @@ import { startServer, stopServer } from '../lib/server';
 
 const apiURL = `http://localhost:${process.env.PORT}/api/brand`;
 
-// Vinicio - the main reason to use mocks is the fact that we don't want to
+// the main reason to use mocks is the fact that we don't want to
 // write a test that relies on both a POST and a GET request
 const createBrandMock = () => {
   return new Brand({
     brandName: faker.lorem.words(10), // need to change and add new things to schema
-    countryOrigin: faker.lorem.words(10),
-    dealers: true,
+    originCountry: faker.lorem.words(10),
+    dealers: faker.lorem.words(3),
     section: faker.lorem.words(8),
   }).save();
 };
@@ -21,20 +21,20 @@ const createBrandMock = () => {
 describe('/api/brand', () => {
   beforeAll(startServer); 
   afterAll(stopServer);
-  afterEach(() => Brand.remove({}));
+  // afterEach(() => Brand.remove({}));
   test('POST - It should respond with a 200 status ', () => {
     const brandToPost = {
-      brandName: faker.lorem.words(10), // need to change and add new things to schema
-      countryOrigin: faker.lorem.words(10),
-      dealers: true,
-      section: faker.lorem.words(8),
+      brandName: faker.lorem.words(11), // need to change and add new things to schema
+      originCountry: faker.lorem.words(1),
+      dealers: faker.lorem.words(2),
+      section: faker.lorem.words(2),
     };
     return superagent.post(apiURL)
       .send(brandToPost)
       .then((response) => {
         expect(response.status).toEqual(200);
         expect(response.body.brandName).toEqual(brandToPost.brandName);
-        expect(response.body.countryOrigin).toEqual(brandToPost.countryOrigin);
+        expect(response.body.originCountry).toEqual(brandToPost.originCountry);
         expect(response.body.dealers).toEqual(brandToPost.dealers);
         expect(response.body.section).toEqual(brandToPost.section);
         expect(response.body._id).toBeTruthy();
@@ -42,24 +42,51 @@ describe('/api/brand', () => {
   });
   test('POST - It should respond with a 400 status ', () => {
     const brandToPost = {
-      brand: faker.lorem.words(50),
+      brand: faker.lorem.words(13),
     };
     return superagent.post(apiURL)
       .send(brandToPost)
-      .then(Promise.reject) // Vinicio - this is needed because we are testing for failures
+      .then(Promise.reject) // this is needed because we are testing for failures
       .catch((response) => {
         // Vinicio - testing status code
         expect(response.status).toEqual(400);
       });
   });
 
-  describe('GET /api/brand', () => {
+  describe('GET /api/brand/:id', () => {
     test('should respond with 200 if there are no errors', () => {
-      // const motorcycleToTest = null; 
-      return superagent.get(`${apiURL}`)
+      let brandToTest = null; //  We need to preserve the motorcycle because 
+      // of scope rules
+      return createBrandMock() 
+        .then((brand) => {
+          brandToTest = brand;
+          return superagent.get(`${apiURL}/${brand._id}`);
+        })
         .then((response) => {
           expect(response.status).toEqual(200);
-        // expect(response.body); ?? expect array as a response
+          expect(response.body.brandName).toEqual(brandToTest.brandName);
+          expect(response.body.originCountry).toEqual(brandToTest.originCountry);
+          expect(response.body.dealers).toEqual(brandToTest.dealers);
+          expect(response.body.section).toEqual(brandToTest.section);
+        });
+    });
+    test('should respond with 404 if there is no brand to be found', () => {
+      return superagent.get(`${apiURL}/InvalidIdSubmitted`)
+        .then(Promise.reject) // Vinicio - testing for a failure
+        .catch((response) => {
+          expect(response.status).toEqual(404);
+        });
+    });
+    test('GET all should respond with 200 if there are no errors', () => {
+      // const motorcycleToTest = null; 
+      return createBrandMock()
+        .then(() => {
+          return superagent.get(`${apiURL}`)
+            .then((response) => {
+              expect(Array.isArray(response.body)).toBeTruthy();
+              // expect(response.status).toEqual(200);
+              // expect(response.body); ?? expect array as a response
+            });
         });
     });
     // test('should respond with 404 if there is no motorcycle to be found', () => {
@@ -72,31 +99,6 @@ describe('/api/brand', () => {
   });
 
 
-  describe('GET /api/brand:id', () => {
-    test('should respond with 200 if there are no errors', () => {
-      let brandToTest = null; //  We need to preserve the motorcycle because 
-      // of scope rules
-      return createBrandMock() 
-        .then((brand) => {
-          brandToTest = brand;
-          return superagent.get(`${apiURL}/${brand._id}`);
-        })
-        .then((response) => {
-          expect(response.status).toEqual(200);
-          expect(response.body.brandName).toEqual(brandToTest.brandName);
-          expect(response.body.countryOrigin).toEqual(brandToTest.countryOrigin);
-          expect(response.body.dealers).toEqual(brandToTest.dealers);
-          expect(response.body.section).toEqual(brandToTest.section);
-        });
-    });
-    test('should respond with 404 if there is no brand to be found', () => {
-      return superagent.get(`${apiURL}/InvalidIdSubmitted`)
-        .then(Promise.reject) // Vinicio - testing for a failure
-        .catch((response) => {
-          expect(response.status).toEqual(404);
-        });
-    });
-  });
   describe('DELETE /api/brand:id', () => {
     test('should respond with 404 if there is no ID in query', () => {
       // let motorcycleToTest = null; //  dummy variable to allow for extra scope for motorcycle
@@ -131,13 +133,13 @@ describe('/api/brand', () => {
         .then((brand) => {
           brandToTest = brand;
           return superagent.put(`${apiURL}/${brand._id}`)
-            .send({ model: 'samantha' });
+            .send({ section: 'samantha' });
         })
         .then((response) => {
           expect(response.status).toEqual(200);
           expect(response.body.section).toEqual('samantha');
           expect(response.body.brandName).toEqual(brandToTest.brandName);
-          expect(response.body.countryOrigin).toEqual(brandToTest.countryOrigin);
+          expect(response.body.originCountry).toEqual(brandToTest.originCountry);
           expect(response.body.dealers).toEqual(brandToTest.dealers);
         });
     });
@@ -152,9 +154,9 @@ describe('/api/brand', () => {
       return createBrandMock()
         .then((brand) => {
           return superagent.put(`${apiURL}/${brand._id}`)
-            .send({ model: '' });
+            .send({ section: '' });
         })
-        .then(Promise.reject)
+        .then(Promise.resolve)
         .catch((response) => {
           expect(response.status).toEqual(400); 
         });
